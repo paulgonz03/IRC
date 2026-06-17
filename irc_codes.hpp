@@ -1,5 +1,7 @@
 #pragma once
 
+# define SERVER_PREFIX      "cap_irc"
+
 # define REPLY_WELCOME      "001"   /* Mensaje de bienvenida */
 
 # define NEED_MORE_PARAMS   "461"   /* Faltan parámetros en el comando */

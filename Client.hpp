@@ -18,6 +18,7 @@
 #include <vector>
 #include <sstream>
 #include <map>
+#include "irc_codes.hpp"
 
 
 #define CLIENT_WELCOME_MENSSAGE "Welcome to my IRC, enter your login and pasword:\n"
@@ -30,6 +31,7 @@ class Client
 
     private:
         int _sock;
+        bool _passCorrect;
         std::stringstream _buffer;
         std::string _nickname;
         std::string _username;

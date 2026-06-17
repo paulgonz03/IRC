@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include "Server.hpp"
 
 std::map<int, Client*> Client::clientsByFd = std::map<int, Client*>();
 std::map<std::string, Client*> Client::clientsByNick = std::map<std::string, Client*>();
@@ -11,6 +12,7 @@ Client::Client(int sock)
     _servername = "";
     _realname = "";
     _sock = sock;
+    _passCorrect = false;
 }
 
 Client::~Client()
@@ -28,26 +30,109 @@ int Client::getSocket() const
 
 void Client::pass_command(std::stringstream &args)
 {
-    std::string temp;
-    args >> temp;
-    std::cout << "Recibido en PASS: [" << temp << "]" << std::endl;
-
-    // if (args.rdbuf()->in_avail() <= 0)
-        // ERROR -> Enviar mensaje de error de falta de parametros
+    std::string tempArg; // argumnets
+    std::cout << "Recibido en PASS" << std::endl;
+    if(_passCorrect == true) //volver a poner contraseña
+    {
+        sendMessage(SERVER_PREFIX, ALREADY_REGISTERED, "* :Unauthorized command (already registered)");
+        return;
+    }
+    if (args.rdbuf()->in_avail() <= 0) //vacio
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* PASS :Not enough parameters");
+        return;
+    }
+    args >> tempArg; // first param (password)
+    Server *server = Server::getInstance();
+    if(tempArg == server->getPass()) // correct
+        _passCorrect = true;
+    else //incorrect
+        sendMessage(SERVER_PREFIX, PASSWORD_DISMATCH, "* :Password incorrect");
 }
 
 void Client::nick_command(std::stringstream &args)
 {
     std::string temp;
+    std::cout << "Recibido en NICK" << std::endl;
+    if (args.rdbuf()->in_avail() <= 0) //vacio
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* NICK :Not enough parameters");
+        return;
+    }
     args >> temp;
-    std::cout << "Recibido en NICK: [" << temp << "]" << std::endl;
+    if(Client::findClient(temp) != NULL)
+    {
+        sendMessage(SERVER_PREFIX, NICKNAME_IN_USE, temp + " " + temp + " :Nickname is already in use");
+        return;
+    }
+    _nickname = temp;
+    clientsByNick[_nickname] = this;
 }
 
 void Client::user_command(std::stringstream &args)
 {
+    std::string user;
+    std::string host;
+    std::string server;
+    std::string real = "";
     std::string temp;
-    args >> temp;
-    std::cout << "Recibido en USER: [" << temp << "]" << std::endl;
+
+    std::cout << "Recibido en USER" << std::endl;
+    if(_username.size() > 0)
+    {
+        sendMessage(SERVER_PREFIX, ALREADY_REGISTERED, "* :Unauthorized command (already registered)");
+        return;
+    }
+    if (args.rdbuf()->in_avail() <= 0) //vacio
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
+        return;
+    }
+    args >> user;
+    if(user.empty())
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
+        return;
+    }
+
+    if (args.rdbuf()->in_avail() <= 0) //vacio
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
+        return;
+    }
+    args >> host;
+    if(host.empty())
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
+        return;
+    }
+
+    if (args.rdbuf()->in_avail() <= 0) //vacio
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
+        return;
+    }
+    args >> server;
+    if(server.empty())
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
+        return;
+    }
+
+    while (args.rdbuf()->in_avail() > 0)
+    {
+        args >> temp;
+        real = real + " " + temp;
+    }
+    if(real.empty())
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
+        return;
+    }
+    _username = user;
+    _hostname = host;
+    _servername = server;
+    _realname = real;
 }
 
 std::map<std::string, Client::ClientFunction> Client::_get_commands()
@@ -166,6 +251,6 @@ void Client::welcomeMenssage()
 
 ssize_t Client::sendMessage(std::string prefix, std::string command, std::string arguments)
 {
-    std::string buffer = ":" + prefix + " " + command + " " + arguments;
+    std::string buffer = ":" + prefix + " " + command + " " + arguments + "\r\n";
     return send(_sock, buffer.c_str(), buffer.size(), 0);
 }

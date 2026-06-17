@@ -109,3 +109,8 @@ Server* Server::getInstance()
     _instance = new Server();
     return(_instance);
 }
+
+std::string Server::getPass(void) const
+{
+    return(_password);
+}

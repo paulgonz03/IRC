@@ -34,6 +34,7 @@ public:
 
     void run(std::string port, std::string password);
     int getSocket(void) const;
+    std::string getPass(void) const;
     Client* handleNewConection();
 
     static Server* getInstance();
