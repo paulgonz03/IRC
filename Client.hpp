@@ -25,25 +25,41 @@
 
 class Client
 {
-private:
-    int _sock;
-    std::stringstream _buffer;
-    // std::string _nickname;
-    // std::string _username;
-    // std::string _hostname;
-    // std::string _servername;
-    // std::string _realname;
+    public:
+        typedef void (Client::*ClientFunction)(std::stringstream &);
 
-public:
-    Client(int sock);
-    ~Client();
+    private:
+        int _sock;
+        std::stringstream _buffer;
+        std::string _nickname;
+        std::string _username;
+        std::string _hostname;
+        std::string _servername;
+        std::string _realname;
 
-    int getSocket(void) const;
-    bool handleClient();
-    bool handleMenssage(std::string cmd);
-    void welcomeMenssage();
+        static std::map<int, Client *> clientsByFd;
+        static std::map<std::string, Client *> clientsByNick;
+        std::map<std::string, ClientFunction> _get_commands();
 
-    ssize_t sendMessage( std::string prefix, std::string command, std::string arguments );
+    public:
+        Client(int sock);
+        ~Client();
+
+        int getSocket(void) const;
+        bool handleClient();
+        bool handleMenssage(std::string cmd);
+        void welcomeMenssage();
+
+        ssize_t sendMessage( std::string prefix, std::string command, std::string arguments );
+        void pass_command(std::stringstream &args);
+        void nick_command(std::stringstream &args);
+        void user_command(std::stringstream &args);
+        
+        static Client *addClient(int sock);
+        static void deleteClient(int sock);
+        static void deleteClients();
+        static Client *findClient(int sock);
+        static Client *findClient(std::string nick);
 };
 
 

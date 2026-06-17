@@ -26,10 +26,9 @@ void signal_handle(int signal)
     g_signal = true;
 }
 
-void removeClient(std::map<int, Client *> &clients, std::vector<pollfd> &fds, std::vector<pollfd>::iterator &itFds)
+void removeClient(std::vector<pollfd> &fds, std::vector<pollfd>::iterator &itFds)
 {
-    delete clients.at(itFds->fd);
-    clients.erase(clients.find(itFds->fd));
+    Client::deleteClient(itFds->fd);
     fds.erase(itFds);
 }
 
@@ -57,7 +56,7 @@ int main(int argc, char **argv)
     escucha (poll)
     */
     std::vector<pollfd> fds;         // tiene todos los fds
-    std::map<int, Client *> clients; // solo tiene fds de los clientes
+    // std::map<int, Client *> clients; // solo tiene fds de los clientes
     pollfd server_pollfd = {.fd = server->getSocket(), .events = POLLIN, .revents = 0};
     fds.push_back(server_pollfd);
     while (g_signal == false)
@@ -67,8 +66,7 @@ int main(int argc, char **argv)
             if (g_signal == true) // ^C
                 break;
             std::cout << "Error in poll" << std::endl;
-            for (std::map<int, Client *>::iterator it = clients.begin(); it != clients.end(); it++)
-                delete it->second;
+            Client::deleteClients();
             delete server;
             return (1);
         }
@@ -80,9 +78,7 @@ int main(int argc, char **argv)
                 {
                     try
                     {
-                        // fds.push_back(server.handleNewConection());
                         Client *newClient = server->handleNewConection();
-                        clients.insert(std::pair<int, Client *>(newClient->getSocket(), newClient));
 
                         pollfd newClientPollfd = {.fd = newClient->getSocket(), .events = POLLIN | POLLHUP | POLLOUT, .revents = 0};
                         fds.push_back(newClientPollfd);
@@ -97,35 +93,31 @@ int main(int argc, char **argv)
                 {
                     try
                     {
-                        Client *newClient = clients.at(itFds->fd);
+                        Client *newClient = Client::findClient(itFds->fd);
                         newClient->welcomeMenssage();
                         itFds->events &= ~POLLOUT;
                     }
                     catch (const std::exception &e)
                     {
-                        removeClient(clients, fds, itFds);
+                        removeClient(fds, itFds);
                         std::cerr << e.what() << '\n';
                         break;
                     }
                 }
                 else // cambios el cliente
                 {
-                    Client *currentClient = clients.at(itFds->fd);
+                    Client *currentClient = Client::findClient(itFds->fd);
                     if (currentClient->handleClient() == false)
                     {
                         std::cout << "Disconection from client " << itFds->fd << std::endl;
-                        removeClient(clients, fds, itFds);
+                        removeClient(fds, itFds);
                         break; // como he eliminado fd del vector, tenemos que empezar a leer de nuevo
                     }
                 }
             }
         }
     }
-    // for (std::vector<pollfd>::iterator it = fds.begin(); it != fds.end(); it++) // cerrar los clientes y el servidor
-    //     if(it->fd != server.getSocket())
-    //         close(it->fd);
-    for (std::map<int, Client *>::iterator it = clients.begin(); it != clients.end(); it++)
-        delete it->second;
+    Client::deleteClients();
     delete server;
     std::cout << "Server closed" << std::endl;
 }

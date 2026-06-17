@@ -96,14 +96,10 @@ Client* Server::handleNewConection()
     std::cout << "New client: " << clientSock << std::endl;
     if (clientSock < 0)
         throw std::runtime_error("Error accepting new client");
-    // hay que hacer que el cliente sea no bloqueante
-    int flags = fcntl(clientSock, F_GETFL, 0);
+    int flags = fcntl(clientSock, F_GETFL, 0); // hay que hacer que el cliente sea no bloqueante
     if (flags < 0 || fcntl(clientSock, F_SETFL, flags | O_NONBLOCK) < 0)
         throw std::runtime_error("Error making nonblocking socket");
-
-    // pollfd newClient = {.fd = clientSock, .events = POLLIN | POLLHUP, .revents = 0};
-    return new Client(clientSock);
-    // return (newClient);
+    return (Client::addClient(clientSock));
 }
 
 Server* Server::getInstance()

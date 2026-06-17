@@ -1,10 +1,15 @@
 #include "Client.hpp"
 
-typedef void (*Function)(const std::string);
-
+std::map<int, Client*> Client::clientsByFd = std::map<int, Client*>();
+std::map<std::string, Client*> Client::clientsByNick = std::map<std::string, Client*>();
 
 Client::Client(int sock)
 {
+    _nickname = "";
+    _username = "";
+    _hostname = "";
+    _servername = "";
+    _realname = "";
     _sock = sock;
 }
 
@@ -19,15 +24,105 @@ int Client::getSocket() const
     return (_sock);
 }
 
+/* ================================================================= */
+
+void Client::pass_command(std::stringstream &args)
+{
+    std::string temp;
+    args >> temp;
+    std::cout << "Recibido en PASS: [" << temp << "]" << std::endl;
+
+    // if (args.rdbuf()->in_avail() <= 0)
+        // ERROR -> Enviar mensaje de error de falta de parametros
+}
+
+void Client::nick_command(std::stringstream &args)
+{
+    std::string temp;
+    args >> temp;
+    std::cout << "Recibido en NICK: [" << temp << "]" << std::endl;
+}
+
+void Client::user_command(std::stringstream &args)
+{
+    std::string temp;
+    args >> temp;
+    std::cout << "Recibido en USER: [" << temp << "]" << std::endl;
+}
+
+std::map<std::string, Client::ClientFunction> Client::_get_commands()
+{
+    std::map<std::string, Client::ClientFunction> commands;
+
+    commands["PASS"] = &Client::pass_command;
+    commands["NICK"] = &Client::nick_command;
+    commands["USER"] = &Client::user_command;
+
+    return commands;
+}
+
+/* ================================================================= */
+
 bool Client::handleMenssage(std::string cmd)
 {
     std::cout << "Cmd (" << _sock << "): [" << cmd << "]" << std::endl;
-    std::map<std::string, Function> commands;
 
-    if (sendMessage("CAP-IRC", "001", ":Hola que tal\n") <= 0)
-        return (false);
+    /* ===================== */
+    std::stringstream ss;
+    std::string main_command;
+    ss << cmd;
+    ss >> main_command;
+
+    std::map<std::string, Client::ClientFunction> commands = _get_commands();
+    std::map<std::string, ClientFunction>::iterator search = commands.find(main_command);
+    if (search != commands.end())
+        (this->*(search->second))(ss);
+    /* ===================== */
+
+    // if (sendMessage("CAP-IRC", "001", ":Hola que tal\n") <= 0)
+    //     return (false);
     return (true);
 }
+
+Client *Client::addClient(int sock)
+{
+    Client *newClient = new Client(sock);
+    clientsByFd[sock] = newClient;
+    return newClient;
+}
+
+void Client::deleteClient(int sock)
+{
+    std::map<int, Client *>::iterator itFd = clientsByFd.find(sock);
+    std::map<std::string, Client *>::iterator itNick = clientsByNick.find(itFd->second->_nickname);
+    if (itNick != clientsByNick.end())
+        clientsByNick.erase(itNick);
+    delete itFd->second;
+    clientsByFd.erase(itFd);
+}
+
+void Client::deleteClients()
+{
+    for (std::map<int, Client*>::iterator it = clientsByFd.begin(); it != clientsByFd.end(); it++)
+        delete it->second;
+}
+
+Client *Client::findClient(int sock)
+{
+    std::map<int, Client *>::iterator it = clientsByFd.find(sock);
+    if (it != clientsByFd.end())
+        return(it->second);
+    return(NULL);
+}
+
+Client *Client::findClient(std::string nick)
+{
+    std::map<std::string, Client *>::iterator it = clientsByNick.find(nick);
+    if (it != clientsByNick.end())
+        return(it->second);
+    return(NULL);
+}
+
 
 bool Client::handleClient()
 {
