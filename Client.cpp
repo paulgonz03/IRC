@@ -1,8 +1,8 @@
 #include "Client.hpp"
 #include "Server.hpp"
 
-std::map<int, Client*> Client::clientsByFd = std::map<int, Client*>();
-std::map<std::string, Client*> Client::clientsByNick = std::map<std::string, Client*>();
+std::map<int, Client *> Client::clientsByFd = std::map<int, Client *>();
+std::map<std::string, Client *> Client::clientsByNick = std::map<std::string, Client *>();
 
 Client::Client(int sock)
 {
@@ -28,111 +28,93 @@ int Client::getSocket() const
 
 /* ================================================================= */
 
-void Client::pass_command(std::stringstream &args)
+std::vector<std::string> parserArgs(std::stringstream &ss)
 {
-    std::string tempArg; // argumnets
+    std::vector<std::string> args;
+    std::string buffer;
+    bool flag = false;
+    while (ss.rdbuf()->in_avail() > 0)
+    {
+        ss >> buffer;
+        if (flag == false)
+        {
+            if (buffer[0] == ':')
+            {
+                flag = true;
+                buffer = buffer.substr(1, buffer.size() - 1);
+            }
+            args.push_back(buffer);
+        }
+        else
+            args[args.size() - 1] += " " + buffer;
+    }
+    return (args);
+}
+
+void Client::pass_command(std::vector<std::string> args)
+{
     std::cout << "Recibido en PASS" << std::endl;
-    if(_passCorrect == true) //volver a poner contraseña
+    if (_passCorrect == true) // volver a poner contraseña
     {
         sendMessage(SERVER_PREFIX, ALREADY_REGISTERED, "* :Unauthorized command (already registered)");
         return;
     }
-    if (args.rdbuf()->in_avail() <= 0) //vacio
+    if (args.size() < 1) // vacio
     {
         sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* PASS :Not enough parameters");
         return;
     }
-    args >> tempArg; // first param (password)
     Server *server = Server::getInstance();
-    if(tempArg == server->getPass()) // correct
+    if (args[0] == server->getPass()) // correct
         _passCorrect = true;
-    else //incorrect
+    else // incorrect
         sendMessage(SERVER_PREFIX, PASSWORD_DISMATCH, "* :Password incorrect");
 }
 
-void Client::nick_command(std::stringstream &args)
+void Client::removeNickname(Client *c)
 {
-    std::string temp;
+    if (c->_nickname == "")
+        return;
+    std::map<std::string, Client *>::iterator it = clientsByNick.find(c->_nickname);
+    clientsByNick.erase(it);
+}
+
+void Client::nick_command(std::vector<std::string> args)
+{
     std::cout << "Recibido en NICK" << std::endl;
-    if (args.rdbuf()->in_avail() <= 0) //vacio
+    if (args.size() < 1) // vacio
     {
         sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* NICK :Not enough parameters");
         return;
     }
-    args >> temp;
-    if(Client::findClient(temp) != NULL)
+    if (Client::findClient(args[0]) != NULL) // repeat client
     {
-        sendMessage(SERVER_PREFIX, NICKNAME_IN_USE, temp + " " + temp + " :Nickname is already in use");
+        sendMessage(SERVER_PREFIX, NICKNAME_IN_USE, args[0] + " " + args[0] + " :Nickname is already in use");
         return;
     }
-    _nickname = temp;
+    removeNickname(this);
+    _nickname = args[0];
     clientsByNick[_nickname] = this;
 }
 
-void Client::user_command(std::stringstream &args)
+void Client::user_command(std::vector<std::string> args)
 {
-    std::string user;
-    std::string host;
-    std::string server;
-    std::string real = "";
-    std::string temp;
-
     std::cout << "Recibido en USER" << std::endl;
-    if(_username.size() > 0)
+    if (_username.size() > 0)
     {
         sendMessage(SERVER_PREFIX, ALREADY_REGISTERED, "* :Unauthorized command (already registered)");
         return;
     }
-    if (args.rdbuf()->in_avail() <= 0) //vacio
-    {
-        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
-        return;
-    }
-    args >> user;
-    if(user.empty())
+    if (args.size() < 4)
     {
         sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
         return;
     }
 
-    if (args.rdbuf()->in_avail() <= 0) //vacio
-    {
-        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
-        return;
-    }
-    args >> host;
-    if(host.empty())
-    {
-        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
-        return;
-    }
-
-    if (args.rdbuf()->in_avail() <= 0) //vacio
-    {
-        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
-        return;
-    }
-    args >> server;
-    if(server.empty())
-    {
-        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
-        return;
-    }
-
-    while (args.rdbuf()->in_avail() > 0)
-    {
-        args >> temp;
-        real = real + " " + temp;
-    }
-    if(real.empty())
-    {
-        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
-        return;
-    }
-    _username = user;
-    _hostname = host;
-    _servername = server;
-    _realname = real;
+    _username = args[0];
+    _hostname = args[1];
+    _servername = args[2];
+    _realname = args[3];
 }
 
 std::map<std::string, Client::ClientFunction> Client::_get_commands()
@@ -161,11 +143,9 @@ bool Client::handleMenssage(std::string cmd)
     std::map<std::string, Client::ClientFunction> commands = _get_commands();
     std::map<std::string, ClientFunction>::iterator search = commands.find(main_command);
     if (search != commands.end())
-        (this->*(search->second))(ss);
+        (this->*(search->second))(parserArgs(ss));
     /* ===================== */
 
-    // if (sendMessage("CAP-IRC", "001", ":Hola que tal\n") <= 0)
-    //     return (false);
     return (true);
 }
 
@@ -188,7 +168,7 @@ void Client::deleteClient(int sock)
 
 void Client::deleteClients()
 {
-    for (std::map<int, Client*>::iterator it = clientsByFd.begin(); it != clientsByFd.end(); it++)
+    for (std::map<int, Client *>::iterator it = clientsByFd.begin(); it != clientsByFd.end(); it++)
         delete it->second;
 }
 
@@ -196,18 +176,17 @@ Client *Client::findClient(int sock)
 {
     std::map<int, Client *>::iterator it = clientsByFd.find(sock);
     if (it != clientsByFd.end())
-        return(it->second);
-    return(NULL);
+        return (it->second);
+    return (NULL);
 }
 
 Client *Client::findClient(std::string nick)
 {
     std::map<std::string, Client *>::iterator it = clientsByNick.find(nick);
     if (it != clientsByNick.end())
-        return(it->second);
-    return(NULL);
+        return (it->second);
+    return (NULL);
 }
-
 
 bool Client::handleClient()
 {
