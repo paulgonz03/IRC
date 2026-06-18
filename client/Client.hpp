@@ -18,10 +18,13 @@
 #include <vector>
 #include <sstream>
 #include <map>
-#include "irc_codes.hpp"
+#include "../irc_codes.hpp"
+#include "../server/Server.hpp"
 
 #define CLIENT_WELCOME_MENSSAGE "Welcome to my IRC, enter your login and pasword:\n"
 #define READBUFFER 1024
+
+class Server;
 
 class Client
 {
@@ -32,12 +35,14 @@ private:
     int _sock;
     bool _passCorrect;
     std::stringstream _buffer;
+
     std::string _nickname;
     std::string _username;
     std::string _hostname;
     std::string _servername;
     std::string _realname;
 
+    bool _sendmessage;
     static std::map<int, Client *> clientsByFd;
     static std::map<std::string, Client *> clientsByNick;
     std::map<std::string, ClientFunction> _get_commands();
@@ -46,12 +51,13 @@ public:
     Client(int sock);
     ~Client();
 
-    int getSocket(void) const;
+    int getSocket() const;
     bool handleClient();
     bool handleMenssage(std::string cmd);
     void welcomeMenssage();
-
     ssize_t sendMessage(std::string prefix, std::string command, std::string arguments);
+    
+    void checkAuth();
     void pass_command(std::vector<std::string> args);
     void nick_command(std::vector<std::string> args);
     void user_command(std::vector<std::string> args);
@@ -61,6 +67,7 @@ public:
     static void deleteClients();
     static Client *findClient(int sock);
     static Client *findClient(std::string nick);
+    static void removeNickname(Client *c);
 
-    void removeNickname(Client *c);
+
 };

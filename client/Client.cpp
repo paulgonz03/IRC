@@ -1,8 +1,4 @@
 #include "Client.hpp"
-#include "Server.hpp"
-
-std::map<int, Client *> Client::clientsByFd = std::map<int, Client *>();
-std::map<std::string, Client *> Client::clientsByNick = std::map<std::string, Client *>();
 
 Client::Client(int sock)
 {
@@ -13,6 +9,7 @@ Client::Client(int sock)
     _realname = "";
     _sock = sock;
     _passCorrect = false;
+    _sendmessage = false;
 }
 
 Client::~Client()
@@ -51,72 +48,6 @@ std::vector<std::string> parserArgs(std::stringstream &ss)
     return (args);
 }
 
-void Client::pass_command(std::vector<std::string> args)
-{
-    std::cout << "Recibido en PASS" << std::endl;
-    if (_passCorrect == true) // volver a poner contraseña
-    {
-        sendMessage(SERVER_PREFIX, ALREADY_REGISTERED, "* :Unauthorized command (already registered)");
-        return;
-    }
-    if (args.size() < 1) // vacio
-    {
-        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* PASS :Not enough parameters");
-        return;
-    }
-    Server *server = Server::getInstance();
-    if (args[0] == server->getPass()) // correct
-        _passCorrect = true;
-    else // incorrect
-        sendMessage(SERVER_PREFIX, PASSWORD_DISMATCH, "* :Password incorrect");
-}
-
-void Client::removeNickname(Client *c)
-{
-    if (c->_nickname == "")
-        return;
-    std::map<std::string, Client *>::iterator it = clientsByNick.find(c->_nickname);
-    clientsByNick.erase(it);
-}
-
-void Client::nick_command(std::vector<std::string> args)
-{
-    std::cout << "Recibido en NICK" << std::endl;
-    if (args.size() < 1) // vacio
-    {
-        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* NICK :Not enough parameters");
-        return;
-    }
-    if (Client::findClient(args[0]) != NULL) // repeat client
-    {
-        sendMessage(SERVER_PREFIX, NICKNAME_IN_USE, args[0] + " " + args[0] + " :Nickname is already in use");
-        return;
-    }
-    removeNickname(this);
-    _nickname = args[0];
-    clientsByNick[_nickname] = this;
-}
-
-void Client::user_command(std::vector<std::string> args)
-{
-    std::cout << "Recibido en USER" << std::endl;
-    if (_username.size() > 0)
-    {
-        sendMessage(SERVER_PREFIX, ALREADY_REGISTERED, "* :Unauthorized command (already registered)");
-        return;
-    }
-    if (args.size() < 4)
-    {
-        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* USER :Not enough parameters");
-        return;
-    }
-
-    _username = args[0];
-    _hostname = args[1];
-    _servername = args[2];
-    _realname = args[3];
-}
-
 std::map<std::string, Client::ClientFunction> Client::_get_commands()
 {
     std::map<std::string, Client::ClientFunction> commands;
@@ -127,8 +58,6 @@ std::map<std::string, Client::ClientFunction> Client::_get_commands()
 
     return commands;
 }
-
-/* ================================================================= */
 
 bool Client::handleMenssage(std::string cmd)
 {
@@ -149,44 +78,7 @@ bool Client::handleMenssage(std::string cmd)
     return (true);
 }
 
-Client *Client::addClient(int sock)
-{
-    Client *newClient = new Client(sock);
-    clientsByFd[sock] = newClient;
-    return newClient;
-}
-
-void Client::deleteClient(int sock)
-{
-    std::map<int, Client *>::iterator itFd = clientsByFd.find(sock);
-    std::map<std::string, Client *>::iterator itNick = clientsByNick.find(itFd->second->_nickname);
-    if (itNick != clientsByNick.end())
-        clientsByNick.erase(itNick);
-    delete itFd->second;
-    clientsByFd.erase(itFd);
-}
-
-void Client::deleteClients()
-{
-    for (std::map<int, Client *>::iterator it = clientsByFd.begin(); it != clientsByFd.end(); it++)
-        delete it->second;
-}
-
-Client *Client::findClient(int sock)
-{
-    std::map<int, Client *>::iterator it = clientsByFd.find(sock);
-    if (it != clientsByFd.end())
-        return (it->second);
-    return (NULL);
-}
-
-Client *Client::findClient(std::string nick)
-{
-    std::map<std::string, Client *>::iterator it = clientsByNick.find(nick);
-    if (it != clientsByNick.end())
-        return (it->second);
-    return (NULL);
-}
+/* ================================================================= */
 
 bool Client::handleClient()
 {

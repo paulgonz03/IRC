@@ -15,8 +15,8 @@
 #include <vector>
 #include <sstream>
 #include <map>
-#include "Server.hpp"
-#include "Client.hpp"
+#include "server/Server.hpp"
+#include "client/Client.hpp"
 
 volatile bool g_signal = false;
 
