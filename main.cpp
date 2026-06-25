@@ -17,6 +17,7 @@
 #include <map>
 #include "server/Server.hpp"
 #include "client/Client.hpp"
+#include "channel/Channel.hpp"
 
 volatile bool g_signal = false;
 
@@ -66,6 +67,7 @@ int main(int argc, char **argv)
             if (g_signal == true) // ^C
                 break;
             std::cout << "Error in poll" << std::endl;
+            Channel::deleteChannels();
             Client::deleteClients();
             delete server;
             return (1);
@@ -117,6 +119,7 @@ int main(int argc, char **argv)
             }
         }
     }
+    Channel::deleteChannels();
     Client::deleteClients();
     delete server;
     std::cout << "Server closed" << std::endl;

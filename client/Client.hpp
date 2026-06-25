@@ -20,11 +20,13 @@
 #include <map>
 #include "../irc_codes.hpp"
 #include "../server/Server.hpp"
+#include "../channel/Channel.hpp"
 
 #define CLIENT_WELCOME_MENSSAGE "Welcome to my IRC, enter your login and pasword:\n"
 #define READBUFFER 1024
 
 class Server;
+class Channel;
 
 class Client
 {
@@ -42,7 +44,8 @@ private:
     std::string _servername;
     std::string _realname;
 
-    bool _sendmessage;
+    bool _is_authenticated;
+    
     static std::map<int, Client *> clientsByFd;
     static std::map<std::string, Client *> clientsByNick;
     std::map<std::string, ClientFunction> _get_commands();
@@ -52,15 +55,22 @@ public:
     ~Client();
 
     int getSocket() const;
+    std::string getNickname() const;
+    std::string getIdentity() const;
     bool handleClient();
     bool handleMenssage(std::string cmd);
     void welcomeMenssage();
     ssize_t sendMessage(std::string prefix, std::string command, std::string arguments);
+
+    void sendJoinMessage(Channel *channel);
+
     
     void checkAuth();
     void pass_command(std::vector<std::string> args);
     void nick_command(std::vector<std::string> args);
     void user_command(std::vector<std::string> args);
+    void join_command(std::vector<std::string> args);
+
 
     static Client *addClient(int sock);
     static void deleteClient(int sock);

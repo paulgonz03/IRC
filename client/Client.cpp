@@ -9,7 +9,7 @@ Client::Client(int sock)
     _realname = "";
     _sock = sock;
     _passCorrect = false;
-    _sendmessage = false;
+    _is_authenticated = false;
 }
 
 Client::~Client()
@@ -21,6 +21,16 @@ Client::~Client()
 int Client::getSocket() const
 {
     return (_sock);
+}
+
+std::string Client::getNickname() const
+{
+    return (_nickname);
+}
+
+std::string Client::getIdentity() const
+{
+    return(_nickname + "!" + _username + "@" + _hostname);
 }
 
 /* ================================================================= */
@@ -55,6 +65,7 @@ std::map<std::string, Client::ClientFunction> Client::_get_commands()
     commands["PASS"] = &Client::pass_command;
     commands["NICK"] = &Client::nick_command;
     commands["USER"] = &Client::user_command;
+    commands["JOIN"] = &Client::join_command;
 
     return commands;
 }
