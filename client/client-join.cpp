@@ -9,6 +9,21 @@ void Client::sendJoinMessage(Channel *channel)
     sendMessage(SERVER_PREFIX, RPL_ENDOFNAMES, _nickname + " " + channel->getChannelName() + " :End of /NAMES list");
 }
 
+
+int checkNameChannel(std::string name)
+{
+    if(name.size() < 2)
+        return(0);
+    if(name[0] != '#')
+        return(0);
+    for(size_t i = 0; i < name.size(); i++)
+    {
+        if(name[i] == 127 || name[i] == ',' || (name[i] <= 32))
+            return(0);
+    }
+    return(1);
+}
+
 void Client::join_command(std::vector<std::string> args)
 {
     if (!_is_authenticated)
@@ -23,6 +38,11 @@ void Client::join_command(std::vector<std::string> args)
         return;
     }
 
+    if(!checkNameChannel(args[0]))
+    {
+        sendMessage(SERVER_PREFIX, INVALID_NAME, "* JOIN :Invalid channel name");
+        return;
+    }
     Channel *channel = Channel::findChannel(args[0]);
     if (!channel) // no existe el canal
     {
@@ -34,5 +54,6 @@ void Client::join_command(std::vector<std::string> args)
     }
     if (channel->hasClient(this) == true) //existe el canal pero estoy dentro de el ya
         return;
-
+    if(channel->canJoin(this, args) == true)
+        channel->joinToChannel(this);
 }

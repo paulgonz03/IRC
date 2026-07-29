@@ -5,27 +5,27 @@ std::map<std::string, Channel *> Channel::_channels = std::map<std::string, Chan
 Channel *Channel::addChannel(std::string name)
 {
     std::map<std::string, Channel *>::iterator it = _channels.find(name);
-    if(it == _channels.end())
+    if (it == _channels.end())
     {
         Channel *channel = new Channel(name);
         _channels[name] = channel;
         return (channel);
     }
-    return(NULL);
+    return (NULL);
 }
 
 void Channel::deleteChannel(std::string name)
 {
     std::map<std::string, Channel *>::iterator it = _channels.find(name);
-    if(it == _channels.end())
-        return ;
+    if (it == _channels.end())
+        return;
     delete it->second;
     _channels.erase(it);
 }
 
 void Channel::deleteChannels()
 {
-    for(std::map<std::string, Channel *>::iterator it = _channels.begin(); it != _channels.end(); it++)
+    for (std::map<std::string, Channel *>::iterator it = _channels.begin(); it != _channels.end(); it++)
         delete it->second;
     _channels.clear();
 }
@@ -33,7 +33,7 @@ void Channel::deleteChannels()
 Channel *Channel::findChannel(std::string name)
 {
     std::map<std::string, Channel *>::iterator it = _channels.find(name);
-    if(it == _channels.end())
+    if (it == _channels.end())
         return NULL;
-    return(it->second);
+    return (it->second);
 }

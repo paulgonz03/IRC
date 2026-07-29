@@ -34,12 +34,29 @@ void Client::pass_command(std::vector<std::string> args)
         sendMessage(SERVER_PREFIX, PASSWORD_DISMATCH, "* :Password incorrect");
 }
 
+int CheckNick(std::string arg)
+{
+    if (arg.empty() || arg.size() > 9)
+        return(0);
+    for (size_t i = 0; i < arg.size(); i++) 
+        if(arg[i] == ' ' || arg[i] == ',' || arg[i] == ':')
+            return (0);
+    if(arg[0] == '#' || arg[0] == '&' || arg[0] == ':' || std::isdigit(static_cast<unsigned char>(arg[0])))
+        return(0);
+    return(1);
+}
+
 void Client::nick_command(std::vector<std::string> args)
 {
     std::cout << "Recibido en NICK" << std::endl;
     if (args.size() < 1) // vacio
     {
         sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* NICK :Not enough parameters");
+        return;
+    }
+    if(!CheckNick(args[0]))
+    {
+        sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, "* NICK :invalid nickname");
         return;
     }
     if (Client::findClient(args[0]) != NULL) // repeat client

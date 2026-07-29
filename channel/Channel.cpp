@@ -59,6 +59,17 @@ bool Channel::canJoin(Client *client, std::vector<std::string> arg)
     return (true);
 }
 
+void Channel::joinToChannel(Client *client)
+{
+    addClient(client);
+    client->sendJoinMessage(this);
+    for(std::vector<t_channel_modes>::iterator it = _modes.begin(); it != _modes.end(); it++)
+    {
+        if(*it == MODE_I)
+            _invit.erase(client->getNickname());
+    }
+}
+
 /***************/
 /* Check users */
 /***************/

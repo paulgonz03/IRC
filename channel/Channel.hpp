@@ -44,6 +44,7 @@ class Channel
         bool checkModeI(Client *client);
         bool checkModeL(Client *client);
         bool canJoin(Client *client, std::vector<std::string> arg);
+        void joinToChannel(Client *client);
 
         /* Check users */
         void    addClient(Client *client);
