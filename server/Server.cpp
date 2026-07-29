@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "../client/Client.hpp"
 
 std::string const Server::IP = "0.0.0.0";
 Server* Server::_instance = NULL;

@@ -49,6 +49,7 @@ void Client::join_command(std::vector<std::string> args)
         channel = Channel::addChannel(args[0]);
         channel->addClient(this);
         channel->addOperator(this);
+        this->addChannel(channel);
         sendJoinMessage(channel);
         return;
     }

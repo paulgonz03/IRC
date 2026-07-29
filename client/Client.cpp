@@ -10,6 +10,7 @@ Client::Client(int sock)
     _sock = sock;
     _passCorrect = false;
     _is_authenticated = false;
+    _quit = false;
 }
 
 Client::~Client()
@@ -66,6 +67,15 @@ std::map<std::string, Client::ClientFunction> Client::_get_commands()
     commands["NICK"] = &Client::nick_command;
     commands["USER"] = &Client::user_command;
     commands["JOIN"] = &Client::join_command;
+    commands["PRIVMSG"] = &Client::privmsg_command;
+    commands["NOTICE"] = &Client::privmsg_command;
+    commands["PING"] = &Client::ping_command;
+    commands["PART"] = &Client::part_command;
+    commands["QUIT"] = &Client::quit_command;
+    commands["KICK"] = &Client::kick_command;
+    commands["INVITE"] = &Client::invite_command;
+    commands["TOPIC"] = &Client::topic_command;
+    commands["MODE"] = &Client::mode_command;
 
     return commands;
 }
@@ -84,9 +94,11 @@ bool Client::handleMenssage(std::string cmd)
     std::map<std::string, ClientFunction>::iterator search = commands.find(main_command);
     if (search != commands.end())
         (this->*(search->second))(parserArgs(ss));
+    else if (!main_command.empty())
+        sendMessage(SERVER_PREFIX, UNKNOWN_COMMAND, (_nickname.empty() ? "*" : _nickname) + " " + main_command + " :Unknown command");
     /* ===================== */
 
-    return (true);
+    return (!_quit);
 }
 
 /* ================================================================= */
@@ -135,4 +147,10 @@ ssize_t Client::sendMessage(std::string prefix, std::string command, std::string
 {
     std::string buffer = ":" + prefix + " " + command + " " + arguments + "\r\n";
     return send(_sock, buffer.c_str(), buffer.size(), 0);
+}
+
+ssize_t Client::sendRaw(std::string line)
+{
+    line += "\r\n";
+    return send(_sock, line.c_str(), line.size(), 0);
 }

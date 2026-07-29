@@ -6,9 +6,9 @@ void Client::checkAuth()
         return ;
     
     sendMessage(SERVER_PREFIX, REPLY_WELCOME, _nickname + " :Welcome to the Internet Relay Network " +  _nickname + "!" + _username + "@" + _hostname);
-    sendMessage(SERVER_PREFIX, RPL_YOURHOST,  _nickname + " :Your host is " + SERVER_PREFIX + ", running version " + SERVER_VERSION);
+    sendMessage(SERVER_PREFIX, RPL_YOURHOST,  _nickname + " :Your host is " + std::string(SERVER_PREFIX) + ", running version " + SERVER_VERSION);
     // sendMessage(SERVER_PREFIX, RPL_CREATED, "Welcome to the Internet Relay Network paulgonz!paulgonz@localhost");
-    sendMessage(SERVER_PREFIX, RPL_MYINFO, _nickname + " " + SERVER_PREFIX + " " + SERVER_VERSION + " i tkoitl");
+    sendMessage(SERVER_PREFIX, RPL_MYINFO, _nickname + " " + std::string(SERVER_PREFIX) + " " + SERVER_VERSION + " i tkoitl");
     _is_authenticated = true;
 }
 void Client::pass_command(std::vector<std::string> args)
@@ -64,9 +64,27 @@ void Client::nick_command(std::vector<std::string> args)
         sendMessage(SERVER_PREFIX, NICKNAME_IN_USE, args[0] + " " + args[0] + " :Nickname is already in use");
         return;
     }
+    std::string oldNick = _nickname;
     removeNickname(this);
     _nickname = args[0];
     clientsByNick[_nickname] = this;
+
+    if (!oldNick.empty())
+    {
+        std::string prefix = oldNick + "!" + _username + "@" + _hostname;
+        std::map<std::string, Client *> notified;
+        for (size_t i = 0; i < _channels.size(); i++)
+        {
+            _channels[i]->renameClient(oldNick, _nickname, this);
+            const std::map<std::string, Client *> &members = _channels[i]->getClients();
+            for (std::map<std::string, Client *>::const_iterator it = members.begin(); it != members.end(); it++)
+                if (it->second != this)
+                    notified[it->first] = it->second;
+        }
+        sendMessage(prefix, "NICK", ":" + _nickname);
+        for (std::map<std::string, Client *>::iterator it = notified.begin(); it != notified.end(); it++)
+            it->second->sendMessage(prefix, "NICK", ":" + _nickname);
+    }
     checkAuth();
 }
 

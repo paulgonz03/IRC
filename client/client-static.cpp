@@ -13,10 +13,14 @@ Client *Client::addClient(int sock)
 void Client::deleteClient(int sock)
 {
     std::map<int, Client *>::iterator itFd = clientsByFd.find(sock);
-    std::map<std::string, Client *>::iterator itNick = clientsByNick.find(itFd->second->_nickname);
+    if (itFd == clientsByFd.end())
+        return;
+    Client *client = itFd->second;
+    client->leaveAllChannels("Connection closed"); // no-op if QUIT already cleaned it up
+    std::map<std::string, Client *>::iterator itNick = clientsByNick.find(client->_nickname);
     if (itNick != clientsByNick.end())
         clientsByNick.erase(itNick);
-    delete itFd->second;
+    delete client;
     clientsByFd.erase(itFd);
 }
 

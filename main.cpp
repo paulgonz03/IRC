@@ -41,6 +41,7 @@ int main(int argc, char **argv)
         return (1);
     }
     signal(SIGINT, signal_handle);
+    signal(SIGPIPE, SIG_IGN); // evita que un send() a un socket cerrado por el peer mate el proceso
     Server *server = Server::getInstance();
     try
     {

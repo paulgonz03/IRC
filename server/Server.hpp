@@ -16,7 +16,6 @@
 #include <stdexcept>
 #include <vector>
 #include <sstream>
-#include "../client/Client.hpp"
 
 class Client;
 

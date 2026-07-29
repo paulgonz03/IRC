@@ -3,28 +3,24 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "../client/Client.hpp"
 
 class Client;
 class Channel
 {
-    public:
-        typedef enum
-        {
-            MODE_K, //PASSWORD
-            MODE_I, //INVITATION
-            MODE_L, //CANTIDAD USUARIOS
-        }t_channel_modes;
-
     private:
         std::string _name;
         std::map<std::string, Client *> _clients;
         std::map<std::string, Client *> _operators;
-        
-        std::vector<t_channel_modes> _modes;
-        std::string _password;
         std::map<std::string, Client *> _invit;
-        size_t _maxUsers;
+
+        std::string _topic;
+
+        bool _inviteOnly;
+        bool _topicRestricted;
+        bool _hasKey;
+        std::string _key;
+        bool _hasLimit;
+        size_t _limit;
 
         static std::map<std::string, Channel *> _channels;
 
@@ -37,7 +33,7 @@ class Channel
         static void deleteChannel(std::string name);
         static void deleteChannels();
         static Channel *findChannel(std::string name);
-        
+
         /**/
         std::string getChannelName();
         bool checkModeK(Client *Client, std::vector<std::string> arg);
@@ -52,6 +48,9 @@ class Channel
         Client* hasClient(std::string name);
         bool    hasClient(Client *client);
         std::string getAllClients();
+        const std::map<std::string, Client *> &getClients() const;
+        bool    isEmpty() const;
+        void    renameClient(std::string oldNick, std::string newNick, Client *client);
 
         /* Check operators */
         void    addOperator(Client* oper);
@@ -60,10 +59,28 @@ class Channel
         bool    isOperator(Client* oper);
 
         /* Check invitations */
-        // Client* hasInvitation(std::string name);
-        // bool    hasInvitation(Client *client);
+        void    addInvite(Client *client);
 
+        /* Topic */
+        std::string getTopic() const;
+        void        setTopic(std::string topic);
+
+        /* Modes */
+        bool   isInviteOnly() const;
+        void   setInviteOnly(bool value);
+        bool   isTopicRestricted() const;
+        void   setTopicRestricted(bool value);
+        bool   hasKey() const;
+        void   setKey(std::string key);
+        void   unsetKey();
+        std::string getKey() const;
+        bool   hasLimit() const;
+        void   setLimit(size_t limit);
+        void   unsetLimit();
+        size_t getLimit() const;
+        std::string getModeString() const;
 
         void sendMessage(Client *client, std::string prefix, std::string command, std::string arguments);
         void sendMessage(std::string prefix, std::string command, std::string arguments);
+        void sendMessageExcept(Client *except, std::string prefix, std::string command, std::string arguments);
 };
