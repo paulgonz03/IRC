@@ -49,11 +49,15 @@ void Client::join_command(std::vector<std::string> args)
         channel = Channel::addChannel(args[0]);
         channel->addClient(this);
         channel->addOperator(this);
+        addChannelRef(channel);
         sendJoinMessage(channel);
         return;
     }
     if (channel->hasClient(this) == true) //existe el canal pero estoy dentro de el ya
         return;
     if(channel->canJoin(this, args) == true)
+    {
         channel->joinToChannel(this);
+        addChannelRef(channel);
+    }
 }

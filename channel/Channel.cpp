@@ -7,8 +7,10 @@ Channel::Channel(std::string name) : _name(name)
     _operators.clear();
 
     /* Modes data */
-    _password = "";
+    _key = "";
     _maxUsers = 0;
+    _topic = "";
+    _topicRestricted = false;
 }
 
 Channel::~Channel()
@@ -23,7 +25,7 @@ std::string Channel::getChannelName()
 bool Channel::checkModeK(Client *client, std::vector<std::string> arg)
 {
     if (arg.size() > 1)
-        if (_password == arg[1])
+        if (_key == arg[1])
             return (true);
     client->sendMessage(SERVER_PREFIX, ERR_BADCHANNELKEY, client->getNickname() + " " + _name + " :Cannot join channel (+k)");
     return (false);
@@ -130,6 +132,11 @@ std::string Channel::getAllClients()
     return (clients);
 }
 
+bool Channel::isEmpty() const
+{
+    return (_clients.empty());
+}
+
 /******************/
 /* Check operator */
 /******************/
@@ -167,6 +174,108 @@ bool Channel::isOperator(Client *oper)
     return false;
 }
 
+/**********************/
+/* Check invitations */
+/**********************/
+
+void Channel::addInvite(Client *client)
+{
+    _invit[client->getNickname()] = client;
+}
+
+/*********/
+/* Topic */
+/*********/
+
+std::string Channel::getTopic() const
+{
+    return (_topic);
+}
+
+void Channel::setTopic(std::string topic)
+{
+    _topic = topic;
+}
+
+bool Channel::isTopicRestricted() const
+{
+    return (_topicRestricted);
+}
+
+void Channel::setTopicRestricted(bool value)
+{
+    _topicRestricted = value;
+}
+
+/*********/
+/* Modes */
+/*********/
+
+bool Channel::hasMode(t_channel_modes mode) const
+{
+    for (size_t i = 0; i < _modes.size(); i++)
+        if (_modes[i] == mode)
+            return (true);
+    return (false);
+}
+
+void Channel::setMode(t_channel_modes mode)
+{
+    if (!hasMode(mode))
+        _modes.push_back(mode);
+}
+
+void Channel::unsetMode(t_channel_modes mode)
+{
+    for (std::vector<t_channel_modes>::iterator it = _modes.begin(); it != _modes.end(); it++)
+    {
+        if (*it == mode)
+        {
+            _modes.erase(it);
+            return;
+        }
+    }
+}
+
+void Channel::setKey(std::string key)
+{
+    _key = key;
+}
+
+void Channel::setLimit(size_t limit)
+{
+    _maxUsers = limit;
+}
+
+std::string Channel::getModeString() const
+{
+    std::string modes = "+";
+    std::string params = "";
+
+    for (std::vector<t_channel_modes>::const_iterator it = _modes.begin(); it != _modes.end(); it++)
+    {
+        if (*it == MODE_I)
+            modes += "i";
+        else if (*it == MODE_K)
+        {
+            modes += "k";
+            params += " " + _key;
+        }
+        else if (*it == MODE_L)
+        {
+            std::stringstream ss;
+            ss << _maxUsers;
+            modes += "l";
+            params += " " + ss.str();
+        }
+    }
+    if (_topicRestricted)
+        modes += "t";
+    if (modes == "+")
+        return ("+");
+    return (modes + params);
+}
+
 void Channel::sendMessage(std::string prefix, std::string command, std::string arguments)
 {
     for (std::map<std::string, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++)
@@ -176,4 +285,11 @@ void Channel::sendMessage(std::string prefix, std::string command, std::string a
 void Channel::sendMessage(Client *client, std::string prefix, std::string command, std::string arguments)
 {
     client->sendMessage(prefix, command, arguments);
+}
+
+void Channel::sendMessageExcept(Client *except, std::string prefix, std::string command, std::string arguments)
+{
+    for (std::map<std::string, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++)
+        if (it->second != except)
+            (it->second)->sendMessage(prefix, command, arguments);
 }

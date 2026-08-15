@@ -4,27 +4,22 @@
 #include <vector>
 #include <map>
 #include "../client/Client.hpp"
+#include "../irc_codes.hpp"
 
 class Client;
 class Channel
 {
-    public:
-        typedef enum
-        {
-            MODE_K, //PASSWORD
-            MODE_I, //INVITATION
-            MODE_L, //CANTIDAD USUARIOS
-        }t_channel_modes;
-
     private:
         std::string _name;
         std::map<std::string, Client *> _clients;
         std::map<std::string, Client *> _operators;
-        
+
         std::vector<t_channel_modes> _modes;
-        std::string _password;
+        std::string _key;
         std::map<std::string, Client *> _invit;
         size_t _maxUsers;
+        std::string _topic;
+        bool _topicRestricted;
 
         static std::map<std::string, Channel *> _channels;
 
@@ -52,6 +47,7 @@ class Channel
         Client* hasClient(std::string name);
         bool    hasClient(Client *client);
         std::string getAllClients();
+        bool    isEmpty() const;
 
         /* Check operators */
         void    addOperator(Client* oper);
@@ -60,10 +56,23 @@ class Channel
         bool    isOperator(Client* oper);
 
         /* Check invitations */
-        // Client* hasInvitation(std::string name);
-        // bool    hasInvitation(Client *client);
+        void    addInvite(Client *client);
 
+        /* Topic */
+        std::string getTopic() const;
+        void        setTopic(std::string topic);
+        bool        isTopicRestricted() const;
+        void        setTopicRestricted(bool value);
+
+        /* Modes */
+        bool        hasMode(t_channel_modes mode) const;
+        void        setMode(t_channel_modes mode);
+        void        unsetMode(t_channel_modes mode);
+        void        setKey(std::string key);
+        void        setLimit(size_t limit);
+        std::string getModeString() const;
 
         void sendMessage(Client *client, std::string prefix, std::string command, std::string arguments);
         void sendMessage(std::string prefix, std::string command, std::string arguments);
+        void sendMessageExcept(Client *except, std::string prefix, std::string command, std::string arguments);
 };

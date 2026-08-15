@@ -16,6 +16,7 @@ void Client::deleteClient(int sock)
     std::map<std::string, Client *>::iterator itNick = clientsByNick.find(itFd->second->_nickname);
     if (itNick != clientsByNick.end())
         clientsByNick.erase(itNick);
+    itFd->second->leaveAllChannels(itFd->second->_quitReason);
     delete itFd->second;
     clientsByFd.erase(itFd);
 }

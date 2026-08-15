@@ -4,7 +4,6 @@ void Client::checkAuth()
 {
     if(_nickname.empty() || _username.empty() || _hostname.empty() || _servername.empty() || _realname.empty() || _passCorrect == false || _is_authenticated == true)
         return ;
-    
     sendMessage(SERVER_PREFIX, REPLY_WELCOME, _nickname + " :Welcome to the Internet Relay Network " +  _nickname + "!" + _username + "@" + _hostname);
     sendMessage(SERVER_PREFIX, RPL_YOURHOST,  _nickname + " :Your host is " + SERVER_PREFIX + ", running version " + SERVER_VERSION);
     // sendMessage(SERVER_PREFIX, RPL_CREATED, "Welcome to the Internet Relay Network paulgonz!paulgonz@localhost");

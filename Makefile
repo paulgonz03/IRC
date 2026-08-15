@@ -1,9 +1,10 @@
-NAME = ft_irc
+NAME = ircserv
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 
 SRC = main.cpp server/Server.cpp \
 client/Client.cpp client/client-auth.cpp client/client-static.cpp client/client-join.cpp \
+client/client-privmsg.cpp client/client-part.cpp client/client-channelops.cpp client/client-mode.cpp \
 channel/channel-static.cpp channel/Channel.cpp
 
 OBJS = ${SRC:%.cpp=objects/%.o}

@@ -10,6 +10,8 @@ Client::Client(int sock)
     _sock = sock;
     _passCorrect = false;
     _is_authenticated = false;
+    _quit = false;
+    _quitReason = "Leaving";
 }
 
 Client::~Client()
@@ -66,6 +68,13 @@ std::map<std::string, Client::ClientFunction> Client::_get_commands()
     commands["NICK"] = &Client::nick_command;
     commands["USER"] = &Client::user_command;
     commands["JOIN"] = &Client::join_command;
+    commands["PRIVMSG"] = &Client::privmsg_command;
+    commands["PART"] = &Client::part_command;
+    commands["QUIT"] = &Client::quit_command;
+    commands["KICK"] = &Client::kick_command;
+    commands["INVITE"] = &Client::invite_command;
+    commands["TOPIC"] = &Client::topic_command;
+    commands["MODE"] = &Client::mode_command;
 
     return commands;
 }
@@ -115,7 +124,7 @@ bool Client::handleClient()
         {
             std::string cmd = temp.substr(0, pos);
             _buffer.str(temp.substr(pos + 2, temp.size())); // se sobreescribe, no se añade
-            if (this->handleMenssage(cmd) == false)
+            if (this->handleMenssage(cmd) == false || _quit == true)
                 return (false);
             flag = true;
         }
@@ -135,4 +144,37 @@ ssize_t Client::sendMessage(std::string prefix, std::string command, std::string
 {
     std::string buffer = ":" + prefix + " " + command + " " + arguments + "\r\n";
     return send(_sock, buffer.c_str(), buffer.size(), 0);
+}
+
+/* ================================================================= */
+
+void Client::addChannelRef(Channel *channel)
+{
+    _channels.push_back(channel);
+}
+
+void Client::removeChannelRef(Channel *channel)
+{
+    for (std::vector<Channel *>::iterator it = _channels.begin(); it != _channels.end(); it++)
+    {
+        if (*it == channel)
+        {
+            _channels.erase(it);
+            return;
+        }
+    }
+}
+
+void Client::leaveAllChannels(std::string reason)
+{
+    for (size_t i = 0; i < _channels.size(); i++)
+    {
+        Channel *channel = _channels[i];
+        channel->sendMessage(getIdentity(), "QUIT", ":" + reason);
+        channel->removeClient(this);
+        channel->removeOperator(this);
+        if (channel->isEmpty())
+            Channel::deleteChannel(channel->getChannelName());
+    }
+    _channels.clear();
 }

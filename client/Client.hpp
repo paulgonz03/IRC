@@ -45,7 +45,11 @@ private:
     std::string _realname;
 
     bool _is_authenticated;
-    
+    bool _quit;
+    std::string _quitReason;
+
+    std::vector<Channel *> _channels;
+
     static std::map<int, Client *> clientsByFd;
     static std::map<std::string, Client *> clientsByNick;
     std::map<std::string, ClientFunction> _get_commands();
@@ -64,12 +68,23 @@ public:
 
     void sendJoinMessage(Channel *channel);
 
-    
+    /* Channel membership tracking */
+    void addChannelRef(Channel *channel);
+    void removeChannelRef(Channel *channel);
+    void leaveAllChannels(std::string reason);
+
     void checkAuth();
     void pass_command(std::vector<std::string> args);
     void nick_command(std::vector<std::string> args);
     void user_command(std::vector<std::string> args);
     void join_command(std::vector<std::string> args);
+    void privmsg_command(std::vector<std::string> args);
+    void part_command(std::vector<std::string> args);
+    void quit_command(std::vector<std::string> args);
+    void kick_command(std::vector<std::string> args);
+    void invite_command(std::vector<std::string> args);
+    void topic_command(std::vector<std::string> args);
+    void mode_command(std::vector<std::string> args);
 
 
     static Client *addClient(int sock);

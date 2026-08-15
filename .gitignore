@@ -1,0 +1,4 @@
+objects/
+ircserv
+*.o
+*.dSYM/
