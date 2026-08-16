@@ -51,5 +51,7 @@ void Client::removeNickname(Client *c)
     if (c->_nickname == "")
         return;
     std::map<std::string, Client *>::iterator it = clientsByNick.find(c->_nickname);
+    if (it == clientsByNick.end())
+        return;
     clientsByNick.erase(it);
 }

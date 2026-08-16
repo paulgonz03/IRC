@@ -12,8 +12,8 @@ Channel::Channel(std::string name) : _name(name)
     _topic = "";
     _inviteOnly = false;
     _topicRestricted = false;
-    _hasKey = false;
-    _key = "";
+    _hasPassword = false;
+    _password = "";
     _hasLimit = false;
     _limit = 0;
 }
@@ -30,7 +30,7 @@ std::string Channel::getChannelName()
 bool Channel::checkModeK(Client *client, std::vector<std::string> arg)
 {
     if (arg.size() > 1)
-        if (_key == arg[1])
+        if (_password == arg[1])
             return (true);
     client->sendMessage(SERVER_PREFIX, ERR_BADCHANNELKEY, client->getNickname() + " " + _name + " :Cannot join channel (+k)");
     return (false);
@@ -54,7 +54,7 @@ bool Channel::checkModeL(Client *client)
 
 bool Channel::canJoin(Client *client, std::vector<std::string> arg)
 {
-    if (_hasKey && checkModeK(client, arg) == false)
+    if (_hasPassword && checkModeK(client, arg) == false)
         return false;
     if (_inviteOnly && checkModeI(client) == false)
         return false;
@@ -247,31 +247,16 @@ void Channel::setTopicRestricted(bool value)
     _topicRestricted = value;
 }
 
-bool Channel::hasKey() const
+void Channel::setPassword(std::string password)
 {
-    return (_hasKey);
+    _hasPassword = true;
+    _password = password;
 }
 
-void Channel::setKey(std::string key)
+void Channel::unsetPassword()
 {
-    _hasKey = true;
-    _key = key;
-}
-
-void Channel::unsetKey()
-{
-    _hasKey = false;
-    _key = "";
-}
-
-std::string Channel::getKey() const
-{
-    return (_key);
-}
-
-bool Channel::hasLimit() const
-{
-    return (_hasLimit);
+    _hasPassword = false;
+    _password = "";
 }
 
 void Channel::setLimit(size_t limit)
@@ -286,11 +271,6 @@ void Channel::unsetLimit()
     _limit = 0;
 }
 
-size_t Channel::getLimit() const
-{
-    return (_limit);
-}
-
 std::string Channel::getModeString() const
 {
     std::string modes = "+";
@@ -300,10 +280,10 @@ std::string Channel::getModeString() const
         modes += "i";
     if (_topicRestricted)
         modes += "t";
-    if (_hasKey)
+    if (_hasPassword)
     {
         modes += "k";
-        params += " " + _key;
+        params += " " + _password;
     }
     if (_hasLimit)
     {

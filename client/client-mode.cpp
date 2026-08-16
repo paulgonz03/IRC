@@ -79,7 +79,7 @@ void Client::mode_command(std::vector<std::string> args)
                     sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, _nickname + " MODE :Not enough parameters");
                     continue;
                 }
-                channel->setKey(args[paramIdx]);
+                channel->setPassword(args[paramIdx]);
                 signs.push_back(true);
                 modeChars.push_back(c);
                 params.push_back(args[paramIdx]);
@@ -87,7 +87,7 @@ void Client::mode_command(std::vector<std::string> args)
             }
             else
             {
-                channel->unsetKey();
+                channel->unsetPassword();
                 signs.push_back(false);
                 modeChars.push_back(c);
                 params.push_back("");

@@ -17,8 +17,8 @@ class Channel
 
         bool _inviteOnly;
         bool _topicRestricted;
-        bool _hasKey;
-        std::string _key;
+        bool _hasPassword;
+        std::string _password;
         bool _hasLimit;
         size_t _limit;
 
@@ -70,14 +70,10 @@ class Channel
         void   setInviteOnly(bool value);
         bool   isTopicRestricted() const;
         void   setTopicRestricted(bool value);
-        bool   hasKey() const;
-        void   setKey(std::string key);
-        void   unsetKey();
-        std::string getKey() const;
-        bool   hasLimit() const;
+        void   setPassword(std::string password);
+        void   unsetPassword();
         void   setLimit(size_t limit);
         void   unsetLimit();
-        size_t getLimit() const;
         std::string getModeString() const;
 
         void sendMessage(Client *client, std::string prefix, std::string command, std::string arguments);
