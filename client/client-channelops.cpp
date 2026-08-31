@@ -39,6 +39,11 @@ void Client::kick_command(std::vector<std::string> args)
         sendMessage(SERVER_PREFIX, ERR_USERNOTINCHANNEL, _nickname + " " + targetNick + " " + chanName + " :They aren't on that channel");
         return;
     }
+    if (target == this && channel->getOperatorCount() <= 1)
+    {
+        sendMessage(SERVER_PREFIX, ERR_CHANOPRIVSNEEDED, _nickname + " " + chanName + " :You're the only channel operator, cannot kick yourself");
+        return;
+    }
 
     channel->sendMessage(getIdentity(), "KICK", chanName + " " + targetNick + " :" + reason);
     channel->removeClient(target);

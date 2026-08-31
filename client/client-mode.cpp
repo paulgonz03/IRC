@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include <cctype>
 
 void Client::mode_command(std::vector<std::string> args)
 {
@@ -102,14 +103,27 @@ void Client::mode_command(std::vector<std::string> args)
                     sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, _nickname + " MODE :Not enough parameters");
                     continue;
                 }
-                long limit = std::atol(args[paramIdx].c_str());
-                if (limit < 0)
-                    limit = 0;
+                std::string limitArg = args[paramIdx];
+                paramIdx++;
+                bool validLimit = !limitArg.empty();
+                for (size_t j = 0; validLimit && j < limitArg.size(); j++)
+                    if (!std::isdigit(static_cast<unsigned char>(limitArg[j])))
+                        validLimit = false;
+                if (!validLimit)
+                {
+                    sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, _nickname + " MODE :Invalid limit parameter");
+                    continue;
+                }
+                long limit = std::atol(limitArg.c_str());
+                if ((size_t)limit < channel->getClients().size())
+                {
+                    sendMessage(SERVER_PREFIX, NEED_MORE_PARAMS, _nickname + " MODE :Limit is below current user count");
+                    continue;
+                }
                 channel->setLimit((size_t)limit);
                 signs.push_back(true);
                 modeChars.push_back(c);
-                params.push_back(args[paramIdx]);
-                paramIdx++;
+                params.push_back(limitArg);
             }
             else
             {

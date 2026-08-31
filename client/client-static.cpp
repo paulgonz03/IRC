@@ -17,6 +17,7 @@ void Client::deleteClient(int sock)
         return;
     Client *client = itFd->second;
     client->leaveAllChannels("Connection closed"); // no-op if QUIT already cleaned it up
+    Channel::removeInviteEverywhere(client->_nickname);
     std::map<std::string, Client *>::iterator itNick = clientsByNick.find(client->_nickname);
     if (itNick != clientsByNick.end())
         clientsByNick.erase(itNick);

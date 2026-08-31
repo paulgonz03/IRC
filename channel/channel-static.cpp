@@ -37,3 +37,9 @@ Channel *Channel::findChannel(std::string name)
         return NULL;
     return (it->second);
 }
+
+void Channel::removeInviteEverywhere(std::string nickname)
+{
+    for (std::map<std::string, Channel *>::iterator it = _channels.begin(); it != _channels.end(); it++)
+        it->second->_invit.erase(nickname);
+}

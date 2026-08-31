@@ -200,6 +200,11 @@ bool Channel::isOperator(Client *oper)
     return false;
 }
 
+size_t Channel::getOperatorCount() const
+{
+    return (_operators.size());
+}
+
 /**********/
 /* Invite */
 /**********/
@@ -281,10 +286,7 @@ std::string Channel::getModeString() const
     if (_topicRestricted)
         modes += "t";
     if (_hasPassword)
-    {
         modes += "k";
-        params += " " + _password;
-    }
     if (_hasLimit)
     {
         std::stringstream ss;

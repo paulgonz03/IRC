@@ -33,6 +33,7 @@ class Channel
         static void deleteChannel(std::string name);
         static void deleteChannels();
         static Channel *findChannel(std::string name);
+        static void removeInviteEverywhere(std::string nickname);
 
         /**/
         std::string getChannelName();
@@ -57,6 +58,7 @@ class Channel
         void    removeOperator(Client *oper);
         Client* isOperator(std::string name);
         bool    isOperator(Client* oper);
+        size_t  getOperatorCount() const;
 
         /* Check invitations */
         void    addInvite(Client *client);
