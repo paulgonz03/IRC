@@ -33,7 +33,7 @@ bool Channel::checkModeK(Client *client, std::vector<std::string> arg)
 
 bool Channel::checkModeI(Client *client)
 {
-    if (_invit.find(client->getNickname()) != _invit.end())
+    if (_invit.find(ircToLower(client->getNickname())) != _invit.end())
         return (true);
     client->sendMessage(SERVER_PREFIX, ERR_INVITEONLYCHAN, client->getNickname() + " " + _name + " :Cannot join channel (+i)");
     return (false);
@@ -43,7 +43,7 @@ bool Channel::checkModeL(Client *client)
 {
     if (_clients.size() < _maxUsers)
         return (true);
-    client->sendMessage(SERVER_PREFIX, ERR_CHANNELISFULL, client->getNickname() + " " + _name + " :Cannot join channel (+i)");
+    client->sendMessage(SERVER_PREFIX, ERR_CHANNELISFULL, client->getNickname() + " " + _name + " :Cannot join channel (+l)");
     return (false);
 }
 
@@ -68,7 +68,7 @@ void Channel::joinToChannel(Client *client)
     for(std::vector<t_channel_modes>::iterator it = _modes.begin(); it != _modes.end(); it++)
     {
         if(*it == MODE_I)
-            _invit.erase(client->getNickname());
+            _invit.erase(ircToLower(client->getNickname()));
     }
 }
 
@@ -78,23 +78,54 @@ void Channel::joinToChannel(Client *client)
 
 void Channel::addClient(Client *client)
 {
-    std::string clientNickname = client->getNickname();
-    std::map<std::string, Client *>::iterator it = _clients.find(clientNickname);
+    std::string key = ircToLower(client->getNickname());
+    std::map<std::string, Client *>::iterator it = _clients.find(key);
     if (it == _clients.end())
-        _clients[clientNickname] = client;
+        _clients[key] = client;
 }
 
 void Channel::removeClient(Client *client)
 {
-    std::string clientNickname = client->getNickname();
-    std::map<std::string, Client *>::iterator it = _clients.find(clientNickname);
+    std::string key = ircToLower(client->getNickname());
+    std::map<std::string, Client *>::iterator it = _clients.find(key);
     if (it != _clients.end())
         _clients.erase(it);
 }
 
+/*
+ * Los mapas del canal (_clients, _operators, _invit) usan el nick (minusculas) como clave.
+ * Si el cliente cambia de NICK sin actualizar estas claves, el servidor cree
+ * que ya no está en el canal (hasClient falla, PRIVMSG da 404, etc.).
+ */
+void Channel::updateClientNickname(Client *client, const std::string &oldNick)
+{
+    std::string oldKey = ircToLower(oldNick);
+    std::string newKey = ircToLower(client->getNickname());
+    std::map<std::string, Client *>::iterator it;
+
+    it = _clients.find(oldKey);
+    if (it != _clients.end())
+    {
+        _clients.erase(it);
+        _clients[newKey] = client;
+    }
+    it = _operators.find(oldKey);
+    if (it != _operators.end())
+    {
+        _operators.erase(it);
+        _operators[newKey] = client;
+    }
+    it = _invit.find(oldKey);
+    if (it != _invit.end())
+    {
+        _invit.erase(it);
+        _invit[newKey] = client;
+    }
+}
+
 Client *Channel::hasClient(std::string name)
 {
-    std::map<std::string, Client *>::iterator it = _clients.find(name);
+    std::map<std::string, Client *>::iterator it = _clients.find(ircToLower(name));
     if (it != _clients.end())
         return it->second;
     return NULL;
@@ -102,8 +133,8 @@ Client *Channel::hasClient(std::string name)
 
 bool Channel::hasClient(Client *client)
 {
-    std::string clientNickname = client->getNickname();
-    std::map<std::string, Client *>::iterator it = _clients.find(clientNickname);
+    std::string key = ircToLower(client->getNickname());
+    std::map<std::string, Client *>::iterator it = _clients.find(key);
     if (it != _clients.end())
         return true;
     return false;
@@ -114,19 +145,21 @@ std::string Channel::getAllClients()
     std::string clients = "";
     for (std::map<std::string, Client *>::iterator it = _clients.begin(); it != _clients.end(); it++)
     {
+        /* Mostrar el nick con el case original del cliente, no la clave en minusculas */
+        std::string display = it->second->getNickname();
         if (_operators.find(it->first) != _operators.end())
         {
             if (it == _clients.begin())
-                clients = "@" + it->first;
+                clients = "@" + display;
             else
-                clients += " @" + it->first;
+                clients += " @" + display;
         }
         else
         {
             if (it == _clients.begin())
-                clients = it->first;
+                clients = display;
             else
-                clients += " " + it->first;
+                clients += " " + display;
         }
     }
     return (clients);
@@ -143,23 +176,23 @@ bool Channel::isEmpty() const
 
 void Channel::addOperator(Client *oper)
 {
-    std::string operNickname = oper->getNickname();
-    std::map<std::string, Client *>::iterator it = _operators.find(operNickname);
+    std::string key = ircToLower(oper->getNickname());
+    std::map<std::string, Client *>::iterator it = _operators.find(key);
     if (it == _operators.end())
-        _operators[operNickname] = oper;
+        _operators[key] = oper;
 }
 
 void Channel::removeOperator(Client *oper)
 {
-    std::string operNickname = oper->getNickname();
-    std::map<std::string, Client *>::iterator it = _operators.find(operNickname);
+    std::string key = ircToLower(oper->getNickname());
+    std::map<std::string, Client *>::iterator it = _operators.find(key);
     if (it != _operators.end())
         _operators.erase(it);
 }
 
 Client *Channel::isOperator(std::string name)
 {
-    std::map<std::string, Client *>::iterator it = _operators.find(name);
+    std::map<std::string, Client *>::iterator it = _operators.find(ircToLower(name));
     if (it != _operators.end())
         return it->second;
     return NULL;
@@ -167,8 +200,8 @@ Client *Channel::isOperator(std::string name)
 
 bool Channel::isOperator(Client *oper)
 {
-    std::string operNickname = oper->getNickname();
-    std::map<std::string, Client *>::iterator it = _operators.find(operNickname);
+    std::string key = ircToLower(oper->getNickname());
+    std::map<std::string, Client *>::iterator it = _operators.find(key);
     if (it != _operators.end())
         return true;
     return false;
@@ -180,7 +213,7 @@ bool Channel::isOperator(Client *oper)
 
 void Channel::addInvite(Client *client)
 {
-    _invit[client->getNickname()] = client;
+    _invit[ircToLower(client->getNickname())] = client;
 }
 
 /*********/

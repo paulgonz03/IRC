@@ -22,6 +22,7 @@
 # define ERR_NOTEXTTOSEND   "412"   /* PRIVMSG sin texto */
 # define UNKNOWN_COMMAND    "421"   /* Comando incorrecto/no encontrado */
 # define ERR_NONICKNAMEGIVEN "431"  /* Se ejecuta `NICK` sin proporcionar nickname */
+# define ERR_ERRONEUSNICKNAME "432" /* Nickname con formato invalido */
 # define NICKNAME_IN_USE    "433"   /* Nickname en uso por otro usuario */
 # define ERR_USERNOTINCHANNEL "441" /* El usuario objetivo no esta en el canal */
 # define ERR_NOTONCHANNEL   "442"   /* El cliente no esta dentro del canal */
@@ -40,5 +41,5 @@ typedef enum
 {
     MODE_K, //KEY
     MODE_I, //INVITATION
-    MODE_L, //CANTIDAD USUARIOS
+    MODE_L  //CANTIDAD USUARIOS
 }t_channel_modes;

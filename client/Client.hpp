@@ -11,6 +11,7 @@
 #include <poll.h>
 #include <stdio.h>
 #include <signal.h>
+#include <cctype>
 #include <cstring>
 #include <string>
 #include <iostream>
@@ -22,11 +23,28 @@
 #include "../server/Server.hpp"
 #include "../channel/Channel.hpp"
 
-#define CLIENT_WELCOME_MENSSAGE "Welcome to my IRC, enter your login and pasword:\n"
+#define CLIENT_WELCOME_MENSSAGE "Welcome to my IRC, enter your login and pasword:\r\n"
 #define READBUFFER 1024
 
 class Server;
 class Channel;
+
+/* IRC trata comandos y nicks sin distinguir mayusculas/minusculas */
+inline std::string ircToLower(const std::string &s)
+{
+    std::string out(s);
+    for (size_t i = 0; i < out.size(); ++i)
+        out[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(out[i])));
+    return out;
+}
+
+inline std::string ircToUpper(const std::string &s)
+{
+    std::string out(s);
+    for (size_t i = 0; i < out.size(); ++i)
+        out[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(out[i])));
+    return out;
+}
 
 class Client
 {
@@ -36,7 +54,8 @@ public:
 private:
     int _sock;
     bool _passCorrect;
-    std::stringstream _buffer;
+    std::string _buffer;
+    std::string _sendBuffer; /* cola de escritura; se vacia solo con POLLOUT */
 
     std::string _nickname;
     std::string _username;
@@ -51,7 +70,7 @@ private:
     std::vector<Channel *> _channels;
 
     static std::map<int, Client *> clientsByFd;
-    static std::map<std::string, Client *> clientsByNick;
+    static std::map<std::string, Client *> clientsByNick; /* clave en minusculas */
     std::map<std::string, ClientFunction> _get_commands();
 
 public:
@@ -65,6 +84,8 @@ public:
     bool handleMenssage(std::string cmd);
     void welcomeMenssage();
     ssize_t sendMessage(std::string prefix, std::string command, std::string arguments);
+    bool flushOutgoing();
+    bool hasPendingWrite() const;
 
     void sendJoinMessage(Channel *channel);
 
@@ -85,6 +106,7 @@ public:
     void invite_command(std::vector<std::string> args);
     void topic_command(std::vector<std::string> args);
     void mode_command(std::vector<std::string> args);
+    void ping_command(std::vector<std::string> args);
 
 
     static Client *addClient(int sock);

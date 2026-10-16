@@ -44,6 +44,7 @@ class Channel
         /* Check users */
         void    addClient(Client *client);
         void    removeClient(Client *client);
+        void    updateClientNickname(Client *client, const std::string &oldNick);
         Client* hasClient(std::string name);
         bool    hasClient(Client *client);
         std::string getAllClients();

@@ -21,7 +21,7 @@ void Client::privmsg_command(std::vector<std::string> args)
     std::string target = args[0];
     std::string text = args[1];
 
-    if (target[0] == '#')
+    if (target[0] == '#' || target[0] == '&')
     {
         Channel *channel = Channel::findChannel(target);
         if (!channel)

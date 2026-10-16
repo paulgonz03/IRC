@@ -3,13 +3,14 @@
 std::string const Server::IP = "0.0.0.0";
 Server* Server::_instance = NULL;
 
-Server::Server()
+Server::Server() : _sock(-1)
 {}
 
 Server::~Server()
 {
-    close(_sock);
-    _sock = -1; // como si haga a null con un puntero
+    if (_sock >= 0)
+        close(_sock);
+    _sock = -1;
 }
 
 int Server::getSocket() const
@@ -32,13 +33,7 @@ void Server::run(std::string port, std::string password)
     if (fd < 0)
         throw std::runtime_error("Error creating the socket");
 
-    /*
-    le hacemos no bloqueante(que no bloque procesos si hay algun error)
-    */
-    // 2 parametro - que quiero hacer en el fd
-    // 3 parametro - parametro que determina si quiero cambiar la configuracion del fd, por ejemplo un set
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
     {
         close(fd);
         throw std::runtime_error("Error making nonblocking socket");
@@ -61,7 +56,10 @@ void Server::run(std::string port, std::string password)
 
     int intPort = std::atoi(port.c_str());
     if (intPort < 1 || intPort > 65535)
+    {
+        close(fd);
         throw std::out_of_range("Invalid port");
+    }
 
     struct sockaddr_in addr;
     bzero(&addr, sizeof(addr));
@@ -96,9 +94,11 @@ Client* Server::handleNewConection()
     std::cout << "New client: " << clientSock << std::endl;
     if (clientSock < 0)
         throw std::runtime_error("Error accepting new client");
-    int flags = fcntl(clientSock, F_GETFL, 0); // hay que hacer que el cliente sea no bloqueante
-    if (flags < 0 || fcntl(clientSock, F_SETFL, flags | O_NONBLOCK) < 0)
+    if (fcntl(clientSock, F_SETFL, O_NONBLOCK) < 0)
+    {
+        close(clientSock);
         throw std::runtime_error("Error making nonblocking socket");
+    }
     return (Client::addClient(clientSock));
 }
 

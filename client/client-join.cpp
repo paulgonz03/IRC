@@ -4,7 +4,11 @@
 void Client::sendJoinMessage(Channel *channel)
 {
     channel->sendMessage(getIdentity(), "JOIN", channel->getChannelName());
-    sendMessage(SERVER_PREFIX, RPL_NOTOPIC, _nickname + " " + channel->getChannelName() + " :No topic is set");
+    /* 332 si hay topic; 331 si el canal no tiene topic */
+    if (channel->getTopic().empty())
+        sendMessage(SERVER_PREFIX, RPL_NOTOPIC, _nickname + " " + channel->getChannelName() + " :No topic is set");
+    else
+        sendMessage(SERVER_PREFIX, RPL_TOPIC, _nickname + " " + channel->getChannelName() + " :" + channel->getTopic());
     sendMessage(SERVER_PREFIX, RPL_NAMREPLY, _nickname + " = " + channel->getChannelName() + " :" + channel->getAllClients());
     sendMessage(SERVER_PREFIX, RPL_ENDOFNAMES, _nickname + " " + channel->getChannelName() + " :End of /NAMES list");
 }
@@ -12,10 +16,10 @@ void Client::sendJoinMessage(Channel *channel)
 
 int checkNameChannel(std::string name)
 {
-    if(name.size() < 2)
-        return(0);
-    if(name[0] != '#')
-        return(0);
+    if (name.size() < 2 || name.size() > 200)
+        return (0);
+    if (name[0] != '#' && name[0] != '&')
+        return (0);
     for(size_t i = 0; i < name.size(); i++)
     {
         if(name[i] == 127 || name[i] == ',' || (name[i] <= 32))

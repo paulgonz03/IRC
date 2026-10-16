@@ -13,7 +13,7 @@ Client *Client::addClient(int sock)
 void Client::deleteClient(int sock)
 {
     std::map<int, Client *>::iterator itFd = clientsByFd.find(sock);
-    std::map<std::string, Client *>::iterator itNick = clientsByNick.find(itFd->second->_nickname);
+    std::map<std::string, Client *>::iterator itNick = clientsByNick.find(ircToLower(itFd->second->_nickname));
     if (itNick != clientsByNick.end())
         clientsByNick.erase(itNick);
     itFd->second->leaveAllChannels(itFd->second->_quitReason);
@@ -25,6 +25,8 @@ void Client::deleteClients()
 {
     for (std::map<int, Client *>::iterator it = clientsByFd.begin(); it != clientsByFd.end(); it++)
         delete it->second;
+    clientsByFd.clear();
+    clientsByNick.clear();
 }
 
 Client *Client::findClient(int sock)
@@ -37,7 +39,7 @@ Client *Client::findClient(int sock)
 
 Client *Client::findClient(std::string nick)
 {
-    std::map<std::string, Client *>::iterator it = clientsByNick.find(nick);
+    std::map<std::string, Client *>::iterator it = clientsByNick.find(ircToLower(nick));
     if (it != clientsByNick.end())
         return (it->second);
     return (NULL);
@@ -47,6 +49,7 @@ void Client::removeNickname(Client *c)
 {
     if (c->_nickname == "")
         return;
-    std::map<std::string, Client *>::iterator it = clientsByNick.find(c->_nickname);
-    clientsByNick.erase(it);
+    std::map<std::string, Client *>::iterator it = clientsByNick.find(ircToLower(c->_nickname));
+    if (it != clientsByNick.end())
+        clientsByNick.erase(it);
 }
